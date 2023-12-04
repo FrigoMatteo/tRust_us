@@ -2,9 +2,10 @@
 name = "tRust_us"
 version = "0.1.0"
 edition = "2021"
-authors = ["your names"]
+authors = ["Frigo Matteo","Meneghini Quentin","Cogliandolo Riccardo","Ghirardello Edoardo"]
 publish = ["kellnr"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+robotics_lib = {version = "0.1.1", registry = "kellnr"}
