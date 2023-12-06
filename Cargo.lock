@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "robotics_lib"
-version = "0.1.1"
+version = "0.1.5"
 source = "sparse+https://advancedprogramming.disi.unitn.it/api/v1/crates/"
-checksum = "08a26cf278fd337c85e5dac55ceb2ba816bc16a7efd9d2eeb5e7c0584f5c3d4b"
+checksum = "59b3931ed8492bd16a47133bcdb083752b681052c7898e8f861ea03f2c8f1fe5"
 dependencies = [
  "lazy_static",
  "rand",
