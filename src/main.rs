@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
-use robotics_lib;
 use std::collections::{BinaryHeap, HashMap};
 use strum::IntoEnumIterator;
+
+use robotics_lib;
 use crate::{
     robotics_lib::world::tile::{Tile,TileType,Content},
     robotics_lib::world::tile::TileType::*,
@@ -17,8 +18,8 @@ use crate::{
     robotics_lib::world::coordinates::Coordinate,
     robotics_lib::world::worldgenerator::Generator,
     robotics_lib::world::World,
-    robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment,LibError::NotEnoughEnergy},
-    robotics_lib::interface::{robot_map,Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
+    robotics_lib::utils::{LibError, calculate_cost_go_with_environment,LibError::NotEnoughEnergy},
+    robotics_lib::interface::{robot_map, Direction, Direction::*, Tools, where_am_i, debug, go, look_at_sky},
 };
 
 fn main() {
@@ -66,9 +67,9 @@ fn generated_example(){
                 println!();
             }
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
-            let r=attuatore(&directions,10,self,world);
+            let r= actuator(&directions, 10, self, world);
             my_position(self,world);
-            let res= gps(self,(1,2),world);
+            let res= gps(self,(2,2),world);
             println!("{:?}", res);
         }
         fn handle_event(&mut self, event: Event) {
@@ -129,11 +130,6 @@ pub fn my_position(robot:&impl Runnable,world:&World ){
     }
     println!("I have this quantity of energy:{}\n",robot.get_energy().get_energy_level());
 }
-
-
-
-
-
 
 /*
 *  MAP:
@@ -246,10 +242,10 @@ pub fn generate_map() -> Vec<Vec<Tile>> {
     ]);
     map
 }
-pub fn attuatore (comandi: &[Direction], costo:usize, robot: &mut impl Runnable,world: &mut World) -> Result<(), LibError>{
-    return match robot.get_energy().has_enough_energy(costo){
+pub fn actuator(commands: &[Direction], cost: usize, robot: &mut impl Runnable, world: &mut World) -> Result<(), LibError>{
+    return match robot.get_energy().has_enough_energy(cost){
         true=>{
-            for c in comandi{
+            for c in commands {
                 let res=go(robot,world,c.to_owned());
                 if res.is_err(){
                     return Err(res.err().unwrap());
@@ -261,15 +257,31 @@ pub fn attuatore (comandi: &[Direction], costo:usize, robot: &mut impl Runnable,
     };
 }
 
+// più bello
+// pub fn actuator(commands: &[Direction], cost: usize, robot: &mut impl Runnable, world: &mut World) -> Result<(), LibError>{
+//     // energy control
+//     if !robot.get_energy().has_enough_energy(cost) { Err(NotEnoughEnergy) }
+//     // work hours
+//     for c in commands {
+//         let res=go(robot,world,c.to_owned());
+//         if res.is_err(){
+//             return Err(res.err().unwrap());
+//         }
+//     }
+//     Ok(())
+// }
+
+// A* algorithm based on a BinaryHeap sorted over f = g + h
+// returns Option of a Vec of directions to get to a destination and the cost to get there or None if nor reachable
 pub fn gps (
     robot: &impl Runnable,
     destination: (usize,usize),
     world: &World,
 ) -> Option<(Vec<Direction>, usize)>{
 
-    let map = robot_map(world);
-    if map.is_none() { return Option::None; }
-    let map1 = map.unwrap();
+    let opt_map = robot_map(world);
+    if opt_map.is_none() { return Option::None; }
+    let map = opt_map.unwrap();
 
     let start = (robot.get_coordinate().get_row(), robot.get_coordinate().get_col());
     let mut costs : HashMap<(usize,usize),(Direction,usize)> = HashMap::new();
@@ -278,48 +290,46 @@ pub fn gps (
     costs.insert(start, (Direction::Down, 0));
     to_visit.push(
         Visit {
-            vertex: start,
-            parent: Direction::Up,
+            coord: start,
             g: 0,
             h: 0,
         }
     );
 
-    while let Some (Visit{vertex, parent, g, h}) = to_visit.pop() {
+    while let Some (Visit{ coord, g, h: _h }) = to_visit.pop() {
 
-        // condizione di uscita
-        if vertex == destination { break; }
+        // exit
+        if coord == destination { break; }
 
         for dir in Direction::iter() {
 
+            // new neighbor
             let neighbor;
-
-            // new neig
+            // controls
+            // border
             if match dir {
-                | Direction::Up => vertex.0 != 0,
-                | Direction::Down => vertex.0 != map1.len() - 1,
-                | Direction::Left => vertex.1 != 0,
-                | Direction::Right => vertex.1 != map1.len() - 1,
-            } { neighbor = get_coords_row_col(vertex, &dir);
+                | Direction::Up => coord.0 != 0,
+                | Direction::Down => coord.0 != map.len() - 1,
+                | Direction::Left => coord.1 != 0,
+                | Direction::Right => coord.1 != map.len() - 1,
+            } { neighbor = get_coords_row_col(coord, &dir, 1);
             } else { continue; }
-
-            let map2 = map1.clone();
-            //non existent
-            if !(map1[neighbor.0][neighbor.1].is_some()
-                && map1[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk()) { continue; }
+            //non existent or not walkable
+            if !(map[neighbor.0][neighbor.1].is_some() &&
+                 map[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk())
+            { continue; }
 
             // new costs
-            let new_g = cost_dest(vertex, neighbor, world, map2);
-            let new_h = new_cost(neighbor, destination);
+            let new_g = cost_g(coord, neighbor, world, &map);
+            let new_h = cost_h(neighbor, destination);
 
-            // se esite ed è migliore salto, se no aggiorno (visited diverso)
+            // contained with better g, skip else update
             if costs.contains_key(&neighbor) && costs[&neighbor].1 < g { continue; } else { costs.insert(neighbor, (dir.clone(), g)); }
 
-            // nuovo elemento
+            // new !analysed element
             to_visit.push(
                 Visit {
-                    vertex: neighbor,
-                    parent: dir,
+                    coord: neighbor,
                     g: g + new_g,
                     h: new_h,
                 }
@@ -330,44 +340,38 @@ pub fn gps (
     if !costs.contains_key(&destination) { return Option::None; }
 
     // serve il backtracking
-    let mut path = Vec::new();
+    let mut commands = Vec::new();
     let mut temp = destination;
 
-
     while temp != start {
-        path.push(costs[&temp].0.clone());
-        temp = get_coords_row_col_rev(temp, &costs[&temp].0);
-        // println!("{:?}", temp);
+        commands.push(costs[&temp].0.clone());
+        temp = get_coords_row_col(temp, &costs[&temp].0, -1);
     }
 
-    let len = path.len();
-    path[0..len].reverse();
-    Some((path, costs[&destination].1))
+    let len = commands.len();
+    commands[0..len].reverse();
+    Some((commands, costs[&destination].1))
 }
-fn new_cost (
-    neig: (usize,usize),
-    dest: (usize,usize),
+
+fn get_coords_row_col(
+    before: (usize, usize),
+    direction: &Direction,
+    delta: i32,
+) -> (usize, usize) {
+    match direction {
+        | Direction::Up =>    ((before.0 as i32 - delta) as usize, before.1),
+        | Direction::Down =>  ((before.0 as i32 + delta) as usize, before.1),
+        | Direction::Left =>   (before.0,                         (before.1 as i32 - delta) as usize),
+        | Direction::Right =>  (before.0,                         (before.1 as i32 + delta) as usize),
+    }
+}
+
+fn cost_g(
+    current_coord: (usize, usize),
+    target_coord: (usize, usize),
+    world: &World,
+    map: &Vec<Vec<Option<Tile>>>,
 ) -> usize {
-    // manhattan
-    (neig.0).abs_diff(dest.0) + (neig.1).abs_diff(dest.1)
-}
-fn get_coords_row_col(before: (usize, usize), direction: &Direction) -> (usize, usize) {
-    match direction {
-        | Direction::Up =>    (before.0 -1, before.1   ),
-        | Direction::Down =>  (before.0 +1, before.1   ),
-        | Direction::Left =>  (before.0,    before.1 -1),
-        | Direction::Right => (before.0,    before.1 +1),
-    }
-}
-fn get_coords_row_col_rev(before: (usize, usize), direction: &Direction) -> (usize, usize) {
-    match direction {
-        | Direction::Up =>    (before.0 +1, before.1   ),
-        | Direction::Down =>  (before.0 -1, before.1   ),
-        | Direction::Left =>  (before.0,    before.1 +1),
-        | Direction::Right => (before.0,    before.1 -1),
-    }
-}
-fn cost_dest (current_coord: (usize,usize), target_coord: (usize,usize), world: &World, map: Vec<Vec<Option<Tile>>>) -> usize {
     // Get tiles
     let target_tile = &map[target_coord.0][target_coord.1].to_owned().unwrap();
     let current_tile = &map[current_coord.0][current_coord.1].to_owned().unwrap();
@@ -391,9 +395,16 @@ fn cost_dest (current_coord: (usize,usize), target_coord: (usize,usize), world: 
 
     base_cost + elevation_cost
 }
+fn cost_h(
+    neighbor: (usize, usize),
+    destination: (usize, usize),
+) -> usize {
+    // manhattan
+    (neighbor.0).abs_diff(destination.0) + (neighbor.1).abs_diff(destination.1)
+}
+
 struct Visit {
-    vertex: (usize,usize),
-    parent: Direction,
+    coord: (usize, usize),
     g: usize,
     h: usize,
 }
