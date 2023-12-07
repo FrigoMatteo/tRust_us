@@ -65,8 +65,8 @@ fn generated_rr(){
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
             let r=attuatore(&directions,10,self,world);
             my_position(self,world);
-            let res=rr(Rock(4),self,world);
-            println!("{:?}",res);
+            // let res=rr(Rock(4),self,world);
+            // println!("{:?}",res);
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);

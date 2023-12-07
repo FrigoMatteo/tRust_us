@@ -16,15 +16,12 @@ use crate::{
     robotics_lib::world::worldgenerator::Generator,
     robotics_lib::world::World,
     robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment,LibError::NotEnoughEnergy},
-    robotics_lib::interface::{robot_view,robot_map,Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
+    robotics_lib::interface::{robot_map,Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
 };
 use strum::IntoEnumIterator;
 use rand::Rng;
 use std::cmp::Ordering;
 use crate::tools_test::{my_position,generate_map, gps};
-
-
-
 
 //
 //
@@ -42,7 +39,7 @@ fn generated_example(){
     impl Generator for WorldGenerator{
         fn gen(&mut self) -> (Vec<Vec<Tile>>, (usize, usize), EnvironmentalConditions, f32, Option<HashMap<Content, f32>>) {
             let map=generate_map();
-            let environmental_conditions = EnvironmentalConditions::new(&[Sunny, Rainy], 15, 12).unwrap();
+            let environmental_conditions = EnvironmentalConditions::new(&[Sunny], 15, 12).unwrap();
 
             let max_score = rand::random::<f32>();
 
@@ -72,8 +69,8 @@ fn generated_example(){
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
             let r=attuatore(&directions,10,self,world);
             my_position(self,world);
-            let res=gps(self,(1,1),world);
-            println!("{:?}",res);
+            let res= gps(self,(0,3),world);
+            println!("{:?}", res);
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);

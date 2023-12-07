@@ -28,7 +28,7 @@ use std::cmp::Ordering;
 use robotics_lib::interface::robot_view;
 
 
-fn gps (
+pub fn gps (
     robot: &impl Runnable,
     destination: (usize,usize),
     world: &World,
@@ -37,17 +37,17 @@ fn gps (
     let map = robot_map(world);
     if map.is_none() { return Option::None; }
     let map1 = map.unwrap();
-    for i in &map1{
-        for j in i.iter(){
-            if j.is_some(){
-                print!(" |{:?}| ",j.to_owned().unwrap().tile_type);
-            }else{
-                print!(" |None| ");
-            }
-        }
-        println!();
-    }
-    println!();
+    // for i in &map1{
+    //     for j in i.iter(){
+    //         if j.is_some(){
+    //             print!(" |{:?}| ",j.to_owned().unwrap().tile_type);
+    //         }else{
+    //             print!(" |None| ");
+    //         }
+    //     }
+    //     println!();
+    // }
+    // println!();
 
     let start = (robot.get_coordinate().get_row(), robot.get_coordinate().get_col());
     let mut costs : HashMap<(usize,usize),(Direction,usize)> = HashMap::new();
@@ -58,16 +58,19 @@ fn gps (
         Visit {
             vertex: start,
             parent: Direction::Up,
-            cost: 0,
+            g: 0,
+            h: 0,
         }
     );
 
-    while let Some (Visit{vertex, parent, cost}) = to_visit.pop() {
+    while let Some (Visit{vertex, parent, g, h}) = to_visit.pop() {
+
+        // println!("{:?} , {:?}, {}", vertex, parent, g);
+        // se esite ed è migliore salto, se no aggiorno (visited diverso)
+        if costs.contains_key(&vertex) && costs[&vertex].1 > g { continue; } else { costs.insert(vertex, (parent, g)); }
+
         // condizione di uscita
         if vertex == destination { break; }
-
-        // se esite ed è migliore salto, se no aggiorno (visited diverso)
-        if costs.contains_key(&vertex) && costs[&vertex].1 < cost { continue; } else { costs.insert(vertex, (parent, cost)); }
 
         for dir in Direction::iter() {
 
@@ -87,16 +90,17 @@ fn gps (
             if !(map1[neighbor.0][neighbor.1].is_some() && map1[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk()) { continue; }
 
             // new costs
-            let new_c =  cost +
-                new_cost(neighbor, destination) +
-                cost_dest(vertex, neighbor, world, map2);
+            let new_g = cost_dest(vertex, neighbor, world, map2);
+            let new_h = new_cost(neighbor, destination);
 
+            // println!("da {:?} , quanto fin qui {}, quanto fin la: {}, f: {}", dir, new_g, new_h, new_g + new_h);
             // nuovo elemento
             to_visit.push(
                 Visit {
                     vertex: neighbor,
                     parent: dir,
-                    cost: new_c,
+                    g: g + new_g,
+                    h: new_h,
                 }
             )
         }
@@ -108,9 +112,11 @@ fn gps (
     let mut path = Vec::new();
     let mut temp = destination;
 
+
     while temp != start {
         path.push(costs[&temp].0.clone());
-        temp = get_coords_row_col(temp, &costs[&temp].0);
+        temp = get_coords_row_col_rev(temp, &costs[&temp].0);
+        // println!("{:?}", temp);
     }
 
     let len = path.len();
@@ -130,6 +136,14 @@ fn get_coords_row_col(before: (usize, usize), direction: &Direction) -> (usize, 
         | Direction::Down =>  (before.0 +1, before.1   ),
         | Direction::Left =>  (before.0,    before.1 -1),
         | Direction::Right => (before.0,    before.1 +1),
+    }
+}
+fn get_coords_row_col_rev(before: (usize, usize), direction: &Direction) -> (usize, usize) {
+    match direction {
+        | Direction::Up =>    (before.0 +1, before.1   ),
+        | Direction::Down =>  (before.0 -1, before.1   ),
+        | Direction::Left =>  (before.0,    before.1 +1),
+        | Direction::Right => (before.0,    before.1 -1),
     }
 }
 fn cost_dest (current_coord: (usize,usize), target_coord: (usize,usize), world: &World, map: Vec<Vec<Option<Tile>>>) -> usize {
@@ -159,12 +173,18 @@ fn cost_dest (current_coord: (usize,usize), target_coord: (usize,usize), world: 
 struct Visit {
     vertex: (usize,usize),
     parent: Direction,
-    cost: usize,
+    g: usize,
+    h: usize,
+}
+impl Visit {
+    fn f (&self) -> usize {
+        self.g + self.h
+    }
 }
 
 impl Ord for Visit {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.cmp(&self.cost)
+        other.f().cmp(&self.f())
     }
 }
 impl PartialOrd for Visit {
@@ -175,17 +195,9 @@ impl PartialOrd for Visit {
 impl Eq for Visit {}
 impl PartialEq for Visit {
     fn eq(&self, other: &Self) -> bool {
-        self.cost.eq(&other.cost)
+        self.f().eq(&other.f())
     }
 }
-
-
-
-
-
-
-
-
 
 
 //Helper functions:
@@ -297,7 +309,7 @@ pub fn generate_map() -> Vec<Vec<Tile>> {
             elevation:1,
         },
         Tile {
-            tile_type: TileType::Lava,
+            tile_type: TileType::Grass,
             content: Content::None,
             elevation: 3,
         },
