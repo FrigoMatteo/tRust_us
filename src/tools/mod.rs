@@ -35,3 +35,4 @@ pub fn attuatore (comandi: &[Direction], costo:usize, robot: &mut impl Runnable,
         false=>Err(NotEnoughEnergy)
     };
 }
+

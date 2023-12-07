@@ -24,11 +24,119 @@ use std::cmp::Ordering;
 use crate::tools_test::{my_position,generate_map, gps};
 
 
+/*
+*  MAP:
+*    ______________________________________
+*   |            |            |            |
+*   |   Street   | Shallow W. |  DeepWater |
+*   |    3 el    |   2 el     |    1 el    |
+*   |____________|____________|____________|
+*   |            |            |            |
+*   |    Grass   |    Sand    |    Hill    |
+*   |    3 el    |    2 el    |    4 el    |
+*   |____________|____________|____________|
+*   |            |            |            |
+*   |   Lava     |    Snow    |  Mountain  |
+*   |   3 el     |    7 el    |    9 el    |
+*   |____________|____________|____________|
+*
+*
+*/
+fn generate_simple_map()-> Vec<Vec<Tile>> {
+    let mut map: Vec<Vec<Tile>> = Vec::new();
+    // let content = Content::None;
+    map.push(vec![
+        Tile{
+            tile_type:TileType::Grass,
+            content:Content::None,
+            elevation:1,
+        },
+        Tile {
+            tile_type: TileType::Street,
+            content: Content::None,
+            elevation: 3,
+        },
+        Tile {
+            tile_type: TileType::ShallowWater,
+            content: Content::None,
+            elevation: 2,
+        },
+        Tile {
+            tile_type: TileType::DeepWater,
+            content: Content::None,
+            elevation: 1,
+        },
+    ]);
+    map.push(vec![
+        Tile{
+            tile_type:TileType::Grass,
+            content:Content::None,
+            elevation:2,
+        },
+        Tile {
+            tile_type: TileType::Grass,
+            content: Content::None,
+            elevation: 3,
+        },
+        Tile {
+            tile_type: TileType::Sand,
+            content: Content::None,
+            elevation: 2,
+        },
+        Tile {
+            tile_type: TileType::Hill,
+            content: Content::None,
+            elevation: 4,
+        },
+    ]);
+    map.push(vec![
+        Tile{
+            tile_type:TileType::Grass,
+            content:Content::None,
+            elevation:1,
+        },
+        Tile {
+            tile_type: TileType::Lava,
+            content: Content::None,
+            elevation: 3,
+        },
+        Tile {
+            tile_type: TileType::Snow,
+            content: Content::None,
+            elevation: 7,
+        },
+        Tile {
+            tile_type: TileType::Mountain,
+            content: Content::None,
+            elevation: 9,
+        },
+    ]);
+    map.push(vec![
+        Tile{
+            tile_type:TileType::Grass,
+            content:Content::None,
+            elevation:1,
+        },
+        Tile {
+            tile_type: TileType::Grass,
+            content: Content::None,
+            elevation: 3,
+        },
+        Tile {
+            tile_type: TileType::Sand,
+            content: Content::Rock(20),
+            elevation: 5,
+        },
+        Tile {
+            tile_type: TileType::Mountain,
+            content: Content::None,
+            elevation: 4,
+        },
+    ]);
+    map
+}
 
 
-//
-//
-//Here we have an example for a generated map (debbuging purpose).
 #[test]
 fn generated_example(){
     struct WorldGenerator{

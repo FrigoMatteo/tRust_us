@@ -1,6 +1,6 @@
 use std::collections::{BinaryHeap, HashMap};
 use crate::{
-    tools::attuatore,
+    tools::{attuatore},
     robotics_lib::world::tile::{Tile,TileType,Content},
     robotics_lib::world::tile::TileType::*,
     robotics_lib::world::tile::Content::*,
@@ -22,24 +22,17 @@ use strum::IntoEnumIterator;
 use rand::Rng;
 use std::cmp::Ordering;
 use crate::tools_test::{my_position,generate_map, gps};
-
-
-
-
-//
-//
-//Here we have an example for a generated map (debbuging purpose).
 #[test]
-fn generated_example(){
-    struct WorldGenerator{
+fn generated_rr(){
+    struct WorldGeneratorRR{
         size:usize,
     }
-    impl WorldGenerator{
+    impl WorldGeneratorRR{
         fn new(size:usize) -> Self {
-            WorldGenerator {size}
+            WorldGeneratorRR {size}
         }
     }
-    impl Generator for WorldGenerator{
+    impl Generator for WorldGeneratorRR{
         fn gen(&mut self) -> (Vec<Vec<Tile>>, (usize, usize), EnvironmentalConditions, f32, Option<HashMap<Content, f32>>) {
             let map=generate_map();
             let environmental_conditions = EnvironmentalConditions::new(&[Sunny, Rainy], 15, 12).unwrap();
@@ -72,7 +65,7 @@ fn generated_example(){
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
             let r=attuatore(&directions,10,self,world);
             my_position(self,world);
-            let res=gps(self,(1,1),world);
+            let res=rr(Rock(4),self,world);
             println!("{:?}",res);
         }
         fn handle_event(&mut self, event: Event) {
@@ -104,7 +97,7 @@ fn generated_example(){
     struct Tool;
     impl Tools for Tool {}
     let tools = vec![Tool];
-    let mut generator=WorldGenerator{size:4};
+    let mut generator=WorldGeneratorRR{size:4};
 
     let run = Runner::new(Box::new(r), &mut generator, tools);
     match run {

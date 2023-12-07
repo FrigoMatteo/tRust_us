@@ -1,4 +1,6 @@
 mod decided_example;
+mod decided_rr;
+mod show_example1;
 
 use std::collections::{BinaryHeap, HashMap};
 use crate::{
@@ -23,8 +25,7 @@ use crate::{
 use strum::IntoEnumIterator;
 use rand::Rng;
 use std::cmp::Ordering;
-
-
+use robotics_lib::interface::robot_view;
 
 
 fn gps (
@@ -36,6 +37,17 @@ fn gps (
     let map = robot_map(world);
     if map.is_none() { return Option::None; }
     let map1 = map.unwrap();
+    for i in &map1{
+        for j in i.iter(){
+            if j.is_some(){
+                print!(" |{:?}| ",j.to_owned().unwrap().tile_type);
+            }else{
+                print!(" |None| ");
+            }
+        }
+        println!();
+    }
+    println!();
 
     let start = (robot.get_coordinate().get_row(), robot.get_coordinate().get_col());
     let mut costs : HashMap<(usize,usize),(Direction,usize)> = HashMap::new();
@@ -427,6 +439,7 @@ fn random_example(){
                 println!();
             }
             my_position(self,world);
+            robot_view(self,world);
             let res=gps(self,(1,1),world);
             println!("{:?}",res);
 
