@@ -1,3 +1,7 @@
+use std::collections::{BinaryHeap, HashMap};
+use strum::IntoEnumIterator;
+use rand::Rng;
+use std::cmp::Ordering;
 use crate::{
     robotics_lib::world::tile::{Tile,TileType,Content},
     robotics_lib::world::tile::TileType::*,
@@ -13,25 +17,21 @@ use crate::{
     robotics_lib::world::coordinates::Coordinate,
     robotics_lib::world::worldgenerator::Generator,
     robotics_lib::world::World,
-    robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment},
-    robotics_lib::interface::{Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
+    robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment,LibError::NotEnoughEnergy},
+    robotics_lib::interface::{robot_map,Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
 };
 
-/*pub fn attuatore (comandi: &[Direction], mut robot: &Runner, mut world: &World) -> Result<(), LibError>{
-    for c in comandi.iter() {
-        while match go(&mut robot, &mut world, *c.clone()) {
-            Ok(_) => true,
-            Err(error) => {
-                match error {
-                    LibError::NotEnoughEnergy => {
-                        //faccio passare un tick
-                        world.advance_time();
-                    }
-                    _ => Err(error)
+pub fn attuatore (comandi: &[Direction], costo:usize, robot: &mut impl Runnable,world: &mut World) -> Result<(), LibError>{
+    return match robot.get_energy().has_enough_energy(costo){
+        true=>{
+            for c in comandi{
+                let res=go(robot,world,c.to_owned());
+                if res.is_err(){
+                    return Err(res.err().unwrap());
                 }
-                false
             }
-        }{}
-    }
-    Ok(())
-}*/
+            Ok(())
+        },
+        false=>Err(NotEnoughEnergy)
+    };
+}
