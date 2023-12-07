@@ -1,91 +1,107 @@
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 use robotics_lib;
-use robotics_lib::interface::{Direction::*, Direction, go, look_at_sky, robot_map};
-use robotics_lib::runner::{Robot, Runner};
-use robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment};
-use robotics_lib::world::tile::Content;
+use robotics_lib::interface::{Direction, look_at_sky, robot_map};
+use robotics_lib::runner::{Runnable};
+use robotics_lib::utils::{calculate_cost_go_with_environment};
+use robotics_lib::world::tile::{Tile};
 use robotics_lib::world::World;
+use strum::IntoEnumIterator;
 
 fn main() {
 
     println!("Hello, world!");
 }
 
-fn attuatore (comandi: &[Direction], mut robot: &Runner, mut world: &World) -> Result<(), LibError>{
-    for c in comandi.iter() {
-        while match go(&mut robot, &mut world, *c.clone()) {
-            Ok(_) => true,
-            Err(error) => {
-                match error {
-                    LibError::NotEnoughEnergy => {
-                        //faccio passare un tick
-                        world.advance_time();
-                    }
-                    _ => Err(error)
-                }
-                false
-            }
-        }{}
-    }
-    Ok(())
-}
+fn gps (
+    robot: &impl Runnable,
+    destination: (usize,usize),
+    world: &World,
+) -> Option<(Vec<Direction>, usize)>{
 
-// risorse: content, [0 = tutte, n = finisce il prima possbile]
-// distanza:         [0 = tutte, n]
-fn ricerca_risorse (risorse: &[(Content, u32)], distanza: u32, mut robot: Runner, mut world: World) {
-    // metto in or delle condizioni di uscita che diachiaro prima di cominciare al bfs
+    let map = robot_map(world);
+    if map.is_none() { return None; }
+    let map1 = map.unwrap();
 
-}
-
-fn dijkstra (start: (usize, usize), distance: usize, robot: &Runner, world: &World) -> Result<HashMap<(usize, usize), i32>, LibError> {
-    let mut arr_cost = HashMap::new();
+    let start = (robot.get_coordinate().get_row(), robot.get_coordinate().get_col());
+    let mut costs : HashMap<(usize,usize),(Direction,usize)> = HashMap::new();
     let mut to_visit = BinaryHeap::new();
-
-    arr_cost.insert(start, 0 as i32);
-    to_visit.push((start, 0 as i32));
-
-    while let Some(((row, col), cost_now)) = to_visit.pop() {
-        if arr_cost.get(&(row, col)).is_some() {
-            continue;
-        } else if cost_now > distance as i32 {
-            break;
+    
+    costs.insert(start, (Direction::Up, 0));
+    to_visit.push(
+        Visit {
+            vertex: start,
+            parent: Direction::Up,
+            cost: 0,
         }
+    );
 
-        for direction in Direction::iter() {
-            match go_allowed(robot, world, &direction)? {
-                Ok(_) => {},
-                Err(_) => continue
-            }
-            let new_cost = cost_now + cost(direction, robot, world);
-            let vicino = get_coords_row_col((row, col), &direction);
+    while let Some (Visit{vertex, parent, cost}) = to_visit.pop() {
+        // condizione di uscita
+        if vertex == destination { break; }
 
-            if arr_cost.get(&vicino).map_or(true, |&current| new_cost < current) {
-                arr_cost.insert(vicino, new_cost);
-                to_visit.push((vicino, new_cost));
-            }
+        // se esite ed è migliore salto, se no aggiorno (visited diverso)
+        if costs.contains_key(&vertex) && costs[&vertex].1 < cost { continue; } else { costs.insert(vertex, (parent, cost)); }
+
+        for dir in Direction::iter() {
+            // new neig
+            let neighbor = get_coords_row_col(vertex, &dir);
+
+            let map2 = map1.clone();
+            //non existent
+            if !(map1[neighbor.0][neighbor.1].is_some() && map1[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk()) { continue; }
+
+            // new costs
+            let new_c =  cost +
+                                new_cost(neighbor, destination) +
+                                cost_dest(vertex, neighbor, world, map2);
+
+            // nuovo elemento
+            to_visit.push(
+                Visit {
+                    vertex: neighbor,
+                    parent: dir,
+                    cost: new_c,
+                }
+            )
         }
     }
+   
+    if !costs.contains_key(&destination) { return None; }
+    
+    // serve il backtracking
+    let mut path = Vec::new();
+    let mut temp = destination;
 
-    Ok(arr_cost)
+    while temp != start {
+        path.push(costs[&temp].0.clone());
+        temp = get_coords_row_col(temp, &costs[&temp].0);
+    }
+
+    let len = path.len();
+    path[0..len].reverse();
+    Some((path, costs[&destination].1))
 }
-
-fn get_coords_row_col(from: (usize, usize), direction: &Direction) -> (usize, usize) {
+fn new_cost (
+    neig: (usize,usize),
+    dest: (usize,usize),
+) -> usize {
+    // manhattan
+    (neig.0).abs_diff(dest.0) + (neig.1).abs_diff(dest.1)
+}
+fn get_coords_row_col(before: (usize, usize), direction: &Direction) -> (usize, usize) {
     match direction {
-        | Direction::Up => (from.0 - 1, from.1),
-        | Direction::Down => (from.0+ 1, from.1),
-        | Direction::Left => (from.0, from.1 - 1),
-        | Direction::Right => (from.0, from.1 + 1),
+        | Direction::Up =>    (before.0 -1, before.1   ),
+        | Direction::Down =>  (before.0 +1, before.1   ),
+        | Direction::Left =>  (before.0,    before.1 -1),
+        | Direction::Right => (before.0,    before.1 +1),
     }
 }
-
-fn cost (direction: Direction, robot: &Runner, world: &World) -> i32 {
-
-    let (row, col) = get_coords_row_col((robot.get_coordinate().get_row(), robot.get_coordinate().get_col()), &direction);
-
+fn cost_dest (current_coord: (usize,usize), target_coord: (usize,usize), world: &World, map: Vec<Vec<Option<Tile>>>) -> usize {
     // Get tiles
-    let map = robot_map(&world);
-    let target_tile = &map[row][col];
-    let current_tile = &map[robot.get_coordinate().get_row()][robot.get_coordinate().get_col()];
+    let target_tile = &map[target_coord.0][target_coord.1].to_owned().unwrap();
+    let current_tile = &map[current_coord.0][current_coord.1].to_owned().unwrap();
+
     // Init costs
     let mut base_cost = target_tile.tile_type.properties().cost();
     let mut elevation_cost = 0;
@@ -97,9 +113,34 @@ fn cost (direction: Direction, robot: &Runner, world: &World) -> i32 {
 
     // Calculate cost
     base_cost = calculate_cost_go_with_environment(base_cost, environmental_conditions, target_tile.tile_type);
+
     // Consider elevation cost only if we are going from a lower tile to a higher tile
     if new_elevation > current_elevation {
         elevation_cost = (new_elevation - current_elevation).pow(2);
     }
+
     base_cost + elevation_cost
 }
+struct Visit {
+    vertex: (usize,usize),
+    parent: Direction,
+    cost: usize,
+}
+
+impl Ord for Visit {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.cost.cmp(&self.cost)
+    }
+}
+impl PartialOrd for Visit {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Eq for Visit {}
+impl PartialEq for Visit {
+    fn eq(&self, other: &Self) -> bool {
+        self.cost.eq(&other.cost)
+    }
+}
+

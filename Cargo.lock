@@ -166,6 +166,8 @@ version = "0.1.0"
 dependencies = [
  "rand",
  "robotics_lib",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]
