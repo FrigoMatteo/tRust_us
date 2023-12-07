@@ -69,8 +69,17 @@ fn gps (
         if costs.contains_key(&vertex) && costs[&vertex].1 < cost { continue; } else { costs.insert(vertex, (parent, cost)); }
 
         for dir in Direction::iter() {
+
+            let neighbor;
+
             // new neig
-            let neighbor = get_coords_row_col(vertex, &dir);
+            if match dir {
+                | Direction::Up => vertex.0 != 0,
+                | Direction::Down => vertex.0 != map1.len() - 1,
+                | Direction::Left => vertex.1 != 0,
+                | Direction::Right => vertex.1 != map1.len() - 1,
+            } { neighbor = get_coords_row_col(vertex, &dir);
+            } else { continue; }
 
             let map2 = map1.clone();
             //non existent
