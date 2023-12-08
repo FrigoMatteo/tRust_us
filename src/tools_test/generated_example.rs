@@ -1,45 +1,36 @@
-use std::collections::{BinaryHeap, HashMap};
-use crate::{
-    tools::{attuatore},
-    robotics_lib::world::tile::{Tile,TileType,Content},
-    robotics_lib::world::tile::TileType::*,
-    robotics_lib::world::tile::Content::*,
-    robotics_lib::world::environmental_conditions::EnvironmentalConditions,
-    robotics_lib::world::environmental_conditions::WeatherType::*,
-    robotics_lib::runner::Robot,
-    robotics_lib::runner::Runnable,
-    robotics_lib::runner::backpack::BackPack,
-    robotics_lib::runner::Runner,
-    robotics_lib::event::events::Event,
-    robotics_lib::energy::Energy,
-    robotics_lib::world::coordinates::Coordinate,
-    robotics_lib::world::worldgenerator::Generator,
-    robotics_lib::world::World,
-    robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment,LibError::NotEnoughEnergy},
-    robotics_lib::interface::{robot_view,robot_map,Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
-};
-use strum::IntoEnumIterator;
-use rand::Rng;
-use std::cmp::Ordering;
-use crate::tools_test::{my_position,generate_map, gps};
+use std::collections::HashMap;
+use robotics_lib::energy::Energy;
+use robotics_lib::event::events::Event;
+use robotics_lib::interface::{debug, Tools,Direction::{Down, Left, Right, Up}};
+use robotics_lib::runner::{Robot, Runnable, Runner};
+use robotics_lib::runner::backpack::BackPack;
+use robotics_lib::world::coordinates::Coordinate;
+use robotics_lib::world::environmental_conditions::{EnvironmentalConditions,WeatherType::Sunny};
+use robotics_lib::world::tile::{Content, Tile};
+use robotics_lib::world::World;
+use robotics_lib::world::worldgenerator::Generator;
+use crate::tools::actuator::actuator;
+use crate::tools::gps::gps;
+use crate::tools_test::{generate_map, my_position};
+
 #[test]
-fn generated_rr(){
-    struct WorldGeneratorRR{
+fn generated_example(){
+    struct WorldGenerator{
         size:usize,
     }
-    impl WorldGeneratorRR{
+    impl WorldGenerator{
         fn new(size:usize) -> Self {
-            WorldGeneratorRR {size}
+            WorldGenerator {size}
         }
     }
-    impl Generator for WorldGeneratorRR{
+    impl Generator for WorldGenerator{
         fn gen(&mut self) -> (Vec<Vec<Tile>>, (usize, usize), EnvironmentalConditions, f32, Option<HashMap<Content, f32>>) {
             let map=generate_map();
-            let environmental_conditions = EnvironmentalConditions::new(&[Sunny, Rainy], 15, 12).unwrap();
+            let environmental_conditions = EnvironmentalConditions::new(&[Sunny], 15, 12).unwrap();
 
             let max_score = rand::random::<f32>();
 
-            (map, (0, 0), environmental_conditions, max_score,Option::None)
+            (map, (0, 0), environmental_conditions, max_score,None)
         }
     }
 
@@ -63,10 +54,17 @@ fn generated_rr(){
                 println!();
             }
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
-            let r=attuatore(&directions,10,self,world);
+            let r= actuator(&directions, 10, self, world);
             my_position(self,world);
-            // let res=rr(Rock(4),self,world);
-            // println!("{:?}",res);
+            let res= gps(self,(3,2),world);
+            if res.is_some(){
+                let i=res.unwrap();
+                let directions=i.0.as_slice();
+                let cost=i.1;
+                let res=actuator(directions,cost,self,world);
+
+            }
+            my_position(self,world);
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);
@@ -97,7 +95,7 @@ fn generated_rr(){
     struct Tool;
     impl Tools for Tool {}
     let tools = vec![Tool];
-    let mut generator=WorldGeneratorRR{size:4};
+    let mut generator=WorldGenerator::new(4);
 
     let run = Runner::new(Box::new(r), &mut generator, tools);
     match run {

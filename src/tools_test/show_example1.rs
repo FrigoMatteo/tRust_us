@@ -1,9 +1,6 @@
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::HashMap;
 use crate::{
-    tools::attuatore,
-    robotics_lib::world::tile::{Tile,TileType,Content},
-    robotics_lib::world::tile::TileType::*,
-    robotics_lib::world::tile::Content::*,
+    robotics_lib::world::tile::{Tile,Content},
     robotics_lib::world::environmental_conditions::EnvironmentalConditions,
     robotics_lib::world::environmental_conditions::WeatherType::*,
     robotics_lib::runner::Robot,
@@ -15,126 +12,11 @@ use crate::{
     robotics_lib::world::coordinates::Coordinate,
     robotics_lib::world::worldgenerator::Generator,
     robotics_lib::world::World,
-    robotics_lib::utils::{go_allowed, LibError, calculate_cost_go_with_environment,LibError::NotEnoughEnergy},
-    robotics_lib::interface::{robot_view,robot_map,Direction,Tools,where_am_i,craft, debug, destroy, go, look_at_sky, teleport, Direction::*},
+    robotics_lib::interface::{Tools, debug, Direction::*},
 };
-use strum::IntoEnumIterator;
-use rand::Rng;
-use std::cmp::Ordering;
-use crate::tools_test::{my_position,generate_map, gps};
-
-
-/*
-*  MAP:
-*    ______________________________________
-*   |            |            |            |
-*   |   Street   | Shallow W. |  DeepWater |
-*   |    3 el    |   2 el     |    1 el    |
-*   |____________|____________|____________|
-*   |            |            |            |
-*   |    Grass   |    Sand    |    Hill    |
-*   |    3 el    |    2 el    |    4 el    |
-*   |____________|____________|____________|
-*   |            |            |            |
-*   |   Lava     |    Snow    |  Mountain  |
-*   |   3 el     |    7 el    |    9 el    |
-*   |____________|____________|____________|
-*
-*
-*/
-fn generate_simple_map()-> Vec<Vec<Tile>> {
-    let mut map: Vec<Vec<Tile>> = Vec::new();
-    // let content = Content::None;
-    map.push(vec![
-        Tile{
-            tile_type:TileType::Grass,
-            content:Content::None,
-            elevation:1,
-        },
-        Tile {
-            tile_type: TileType::Street,
-            content: Content::None,
-            elevation: 3,
-        },
-        Tile {
-            tile_type: TileType::ShallowWater,
-            content: Content::None,
-            elevation: 2,
-        },
-        Tile {
-            tile_type: TileType::DeepWater,
-            content: Content::None,
-            elevation: 1,
-        },
-    ]);
-    map.push(vec![
-        Tile{
-            tile_type:TileType::Grass,
-            content:Content::None,
-            elevation:2,
-        },
-        Tile {
-            tile_type: TileType::Grass,
-            content: Content::None,
-            elevation: 3,
-        },
-        Tile {
-            tile_type: TileType::Sand,
-            content: Content::None,
-            elevation: 2,
-        },
-        Tile {
-            tile_type: TileType::Hill,
-            content: Content::None,
-            elevation: 4,
-        },
-    ]);
-    map.push(vec![
-        Tile{
-            tile_type:TileType::Grass,
-            content:Content::None,
-            elevation:1,
-        },
-        Tile {
-            tile_type: TileType::Lava,
-            content: Content::None,
-            elevation: 3,
-        },
-        Tile {
-            tile_type: TileType::Snow,
-            content: Content::None,
-            elevation: 7,
-        },
-        Tile {
-            tile_type: TileType::Mountain,
-            content: Content::None,
-            elevation: 9,
-        },
-    ]);
-    map.push(vec![
-        Tile{
-            tile_type:TileType::Grass,
-            content:Content::None,
-            elevation:1,
-        },
-        Tile {
-            tile_type: TileType::Grass,
-            content: Content::None,
-            elevation: 3,
-        },
-        Tile {
-            tile_type: TileType::Sand,
-            content: Content::Rock(20),
-            elevation: 5,
-        },
-        Tile {
-            tile_type: TileType::Mountain,
-            content: Content::None,
-            elevation: 4,
-        },
-    ]);
-    map
-}
+use crate::tools::actuator::actuator;
+use crate::tools::gps::gps;
+use crate::tools_test::{generate_map, my_position};
 
 
 #[test]
@@ -154,7 +36,7 @@ fn generated_example(){
 
             let max_score = rand::random::<f32>();
 
-            (map, (0, 0), environmental_conditions, max_score,Option::None)
+            (map, (0, 0), environmental_conditions, max_score,None)
         }
     }
 
@@ -178,7 +60,11 @@ fn generated_example(){
                 println!();
             }
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
-            let r=attuatore(&directions,10,self,world);
+            let r=actuator(&directions,10,self,world);
+            match r{
+                Ok(_)=>println!("Done"),
+                Err(_)=>println!("Error"),
+            }
             my_position(self,world);
             let res=gps(self,(1,1),world);
             println!("{:?}",res);
@@ -212,7 +98,7 @@ fn generated_example(){
     struct Tool;
     impl Tools for Tool {}
     let tools = vec![Tool];
-    let mut generator=WorldGenerator{size:4};
+    let mut generator=WorldGenerator::new(4);
 
     let run = Runner::new(Box::new(r), &mut generator, tools);
     match run {
