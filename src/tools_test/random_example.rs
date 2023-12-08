@@ -107,7 +107,7 @@ fn random_example() {
             }
             my_position(self, world);
             robot_view(self, world);
-            let res = gps(self, (1,1), world);
+            let res = gps(self, (1, 1), world, Option::None);
             println!("{:?}", res);
 
         }

@@ -56,12 +56,13 @@ fn generated_example(){
             let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
             let r= actuator(&directions, 10, self, world);
             my_position(self,world);
-            let res= gps(self,(3,2),world);
+            let res= gps(self, (2,2), world, None);
+            println!("{:?}", res);
             if res.is_some(){
                 let i=res.unwrap();
                 let directions=i.0.as_slice();
                 let cost=i.1;
-                let res=actuator(directions,cost,self,world);
+                // let res=actuator(directions,cost,self,world);
 
             }
             my_position(self,world);

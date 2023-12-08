@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::cmp::{min, Ordering};
 use std::collections::{BinaryHeap, HashMap};
 use robotics_lib::interface::{Direction, look_at_sky, robot_map};
 use robotics_lib::runner::Runnable;
@@ -6,24 +6,52 @@ use robotics_lib::utils::calculate_cost_go_with_environment;
 use robotics_lib::world::tile::Tile;
 use robotics_lib::world::World;
 use strum::IntoEnumIterator;
+use crate::tools::gps::Command::{D, T};
 
 // A* algorithm based on a BinaryHeap sorted over f = g + h
 // returns Option of a Vec of directions to get to a destination and the cost to get there or None if nor reachable
-pub fn gps (
+pub fn gps(
+    // metterei delle coordinate per poter utlizzare la funzione anche per altri casi
     robot: &impl Runnable,
     destination: (usize,usize),
     world: &World,
-) -> Option<(Vec<Direction>, usize)>{
+    mut opt_teleports: Option<&[(usize, usize)]>,
+) -> Option<(Vec<Command>, usize)>{
 
     let opt_map = robot_map(world);
     if opt_map.is_none() { return None; }
     let map = opt_map.unwrap();
 
     let start = (robot.get_coordinate().get_row(), robot.get_coordinate().get_col());
-    let mut costs : HashMap<(usize,usize),(Direction,usize)> = HashMap::new();
+    let mut costs : HashMap<(usize,usize),(Command,usize)> = HashMap::new();
     let mut to_visit = BinaryHeap::new();
+    // new neighbor
+    let mut neighbor= (0,0);
+    let mut new_g = 0;
+    let mut new_h= 0;
 
-    costs.insert(start, (Direction::Down, 0));
+    // nearest to start
+    let mut t1 = (0, 0);
+    let mut min_cost_after_teleport = 0; //speculation over t2
+    let mut cost_teleport= 0;
+    // teleport handling
+    if opt_teleports.is_some() && opt_teleports.unwrap().len() >= 2 {
+        let teleports = opt_teleports.unwrap();
+        t1 = teleports[0];
+        let mut t2 = teleports[0];
+        for teleport in teleports.iter() {
+            if cost_h(start, t1)       > cost_h(start, *teleport)       { t1 = *teleport; }
+            if cost_h(destination, t2) > cost_h(destination, *teleport) { t2 = *teleport; }
+        }
+
+        if t1 == t2 {
+            opt_teleports = None;
+        } else {
+            min_cost_after_teleport = cost_h(t2, destination);
+        }
+    }
+
+    costs.insert(start, (T(start.0, start.1), 0));
     to_visit.push(
         Visit {
             coord: start,
@@ -32,15 +60,32 @@ pub fn gps (
         }
     );
 
-    while let Some (Visit{ coord, g, h: _h }) = to_visit.pop() {
+    while let Some (Visit{ mut coord, g, h: _h }) = to_visit.pop() {
 
         // exit
         if coord == destination { break; }
 
-        for dir in Direction::iter() {
+        // teleport
+        if opt_teleports.is_some() && coord == t1 {
+            // lets flyyyyy
+            for opt_teleport in opt_teleports.unwrap().iter() {
+                if *opt_teleport == t1 { continue; }
+                // contained with better g, skip else update
+                if costs.contains_key(&neighbor) && costs[&neighbor].1 < g { continue; } else { costs.insert(*opt_teleport, (T(coord.0,coord.1), g)); }
 
-            // new neighbor
-            let neighbor;
+                // new !analysed element
+                to_visit.push(
+                    Visit {
+                        coord: *opt_teleport,
+                        g: g + 30,
+                        h: cost_h(*opt_teleport, destination),
+                    }
+                )
+            }
+            opt_teleports = None;
+        }
+
+        for dir in Direction::iter() {
             // controls
             // border
             if match dir {
@@ -55,18 +100,22 @@ pub fn gps (
                 map[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk())
             { continue; }
 
-            // new costs
-            let new_g = cost_g(coord, neighbor, world, &map);
-            let new_h = cost_h(neighbor, destination);
-
+            new_g = g + cost_g(coord, neighbor, world, &map);
             // contained with better g, skip else update
-            if costs.contains_key(&neighbor) && costs[&neighbor].1 < g { continue; } else { costs.insert(neighbor, (dir.clone(), g)); }
+            if costs.contains_key(&neighbor) && costs[&neighbor].1 < new_g { continue; } else { costs.insert(neighbor, (D(dir.clone()), new_g)); }
+
+            // new costs
+            new_h = cost_h(neighbor, destination);
+            if opt_teleports.is_some() {
+                cost_teleport = cost_h(neighbor, t1) + min_cost_after_teleport +30;
+                new_h = min(new_h, cost_teleport);
+            }
 
             // new !analysed element
             to_visit.push(
                 Visit {
                     coord: neighbor,
-                    g: g + new_g,
+                    g: new_g,
                     h: new_h,
                 }
             )
@@ -75,18 +124,32 @@ pub fn gps (
 
     if !costs.contains_key(&destination) { return None; }
 
-    // serve il backtracking
-    let mut commands = Vec::new();
+    //backtracking
+    let mut commands : Vec<Command> = Vec::new();
     let mut temp = destination;
 
     while temp != start {
-        commands.push(costs[&temp].0.clone());
-        temp = get_coords_row_col(temp, &costs[&temp].0, -1);
+        temp = match &costs[&temp].0 {
+            D(dir) => {
+                commands.push(costs[&temp].0.clone());
+                get_coords_row_col(temp, dir, -1)
+            },
+            T(x, y) => {
+                commands.push(T(temp.0,temp.1));
+                (*x, *y)
+            },
+        }
     }
 
     let len = commands.len();
     commands[0..len].reverse();
     Some((commands, costs[&destination].1))
+}
+
+#[derive(Debug, Clone)]
+pub enum Command {
+    D(Direction),
+    T(usize,usize),
 }
 
 fn get_coords_row_col(
@@ -136,7 +199,8 @@ fn cost_h(
     destination: (usize, usize),
 ) -> usize {
     // manhattan
-    (neighbor.0).abs_diff(destination.0) + (neighbor.1).abs_diff(destination.1)
+    let correction = 2;
+    (neighbor.0).abs_diff(destination.0) + (neighbor.1).abs_diff(destination.1) * correction
 }
 
 struct Visit {

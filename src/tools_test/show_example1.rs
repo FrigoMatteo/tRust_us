@@ -66,7 +66,7 @@ fn generated_example(){
                 Err(_)=>println!("Error"),
             }
             my_position(self,world);
-            let res=gps(self,(1,1),world);
+            let res= gps(self, (1, 1), world, None);
             println!("{:?}",res);
         }
         fn handle_event(&mut self, event: Event) {
