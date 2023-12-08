@@ -1,6 +1,9 @@
 mod show_example1;
 mod generated_example;
 mod random_example;
+mod teleport_example;
+mod resource_research_example;
+
 use crate::{
     robotics_lib::world::tile::Tile,
     robotics_lib::world::tile::TileType::*,
