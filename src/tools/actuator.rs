@@ -18,6 +18,8 @@ pub fn actuator(
     if !robot.get_energy().has_enough_energy(cost) { return Err(NotEnoughEnergy); }
     // work hours
     for c in commands {
+        // debug purposes
+        // println!("{:?}", c);
         let res= match c {
             Command::D(dir) => go(robot, world, dir.to_owned()),
             Command::T(x, y) => teleport(robot, world, (*x,*y)),

@@ -164,8 +164,14 @@ fn generated_example(){
                     let directions=[D(Left),D(Up),D(Up)];
                     let r= actuator(&directions, 10, self, world);
                     my_position(self,world);
-                }if FLAG2 {
-                    //Do the gps..
+                }
+                if FLAG2 {
+                    println!("-----------------------------------------------------------------");
+                    if let Some(i) = gps(self, (0,2), world, Some(&[(2,1), (0,3)])) {
+                        println!("{:?}", i);
+                        let res = actuator(i.0.as_slice(), i.1, self, world);
+                        println!("{:?}", res);
+                    }
                     my_position(self,world);
                 }
             }

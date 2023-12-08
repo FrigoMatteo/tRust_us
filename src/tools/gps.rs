@@ -129,6 +129,8 @@ pub fn gps(
     let mut temp = destination;
 
     while temp != start {
+        // debug purposes
+        // println!("temp : {:?}, action_backwards : {:?}, cost : {}", temp, &costs[&temp].0, &costs[&temp].1);
         temp = match &costs[&temp].0 {
             D(dir) => {
                 commands.push(costs[&temp].0.clone());
