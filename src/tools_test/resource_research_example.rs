@@ -12,6 +12,7 @@ use robotics_lib::world::tile::Content::*;
 use robotics_lib::world::World;
 use robotics_lib::world::worldgenerator::Generator;
 use crate::tools::actuator::actuator;
+use crate::tools::gps::Command::D;
 use crate::tools::gps::gps;
 use crate::tools_test::{generate_map, my_position};
 
@@ -156,11 +157,11 @@ fn generated_example(){
                         println!();
                     }
                     //Create the robot_map
-                    let directions=[Down,Down,Right,Down,Right,Right,Up,Up,Up];
+                    let directions=[D(Down),D(Down),D(Right),D(Down),D(Right),D(Right),D(Up),D(Up),D(Up)];
                     let r= actuator(&directions, 10, self, world);
                     my_position(self,world);
                     let r=teleport(self,world,(2,1));
-                    let directions=[Left,Up,Up];
+                    let directions=[D(Left),D(Up),D(Up)];
                     let r= actuator(&directions, 10, self, world);
                     my_position(self,world);
                 }if FLAG2 {

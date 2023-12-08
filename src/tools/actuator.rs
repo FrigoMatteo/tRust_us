@@ -15,7 +15,7 @@ pub fn actuator(
     world: &mut World,
 ) -> Result<(), LibError>{
     // energy control
-    if !robot.get_energy().has_enough_energy(cost) { Err(NotEnoughEnergy) }
+    if !robot.get_energy().has_enough_energy(cost) { return Err(NotEnoughEnergy); }
     // work hours
     for c in commands {
         let res= match c {
@@ -23,7 +23,7 @@ pub fn actuator(
             Command::T(x, y) => teleport(robot, world, (*x,*y)),
         };
 
-        if res.is_err(){ Err(res.err().unwrap()) }
+        if res.is_err(){ return Err(res.err().unwrap()); }
     }
     Ok(())
 }

@@ -10,7 +10,8 @@ use robotics_lib::world::tile::{Content, Tile};
 use robotics_lib::world::World;
 use robotics_lib::world::worldgenerator::Generator;
 use crate::tools::actuator::actuator;
-use crate::tools::gps::gps;
+use crate::tools::gps::{Command, gps};
+use crate::tools::gps::Command::D;
 use crate::tools_test::{generate_map, my_position};
 
 #[test]
@@ -53,18 +54,18 @@ fn generated_example(){
                 }
                 println!();
             }
-            let directions=[Down,Down,Down,Right,Right,Left,Left,Up,Up,Up];
+            let directions =[D(Down),D(Down),D(Down),D(Right),D(Right),D(Left),D(Left),D(Up),D(Up),D(Up)];
             let r= actuator(&directions, 10, self, world);
             my_position(self,world);
-            let res= gps(self, (2,2), world, None);
-            println!("{:?}", res);
-            if res.is_some(){
-                let i=res.unwrap();
+
+            if let Some(i) = gps(self, (2,2), world, None) {
+                println!("{:?}", i);
                 let directions=i.0.as_slice();
                 let cost=i.1;
-                // let res=actuator(directions,cost,self,world);
-
+                let res=actuator(directions,cost,self,world);
+                println!("{:?}", res);
             }
+
             my_position(self,world);
         }
         fn handle_event(&mut self, event: Event) {
