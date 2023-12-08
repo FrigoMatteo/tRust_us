@@ -31,8 +31,8 @@ pub fn actuator(
         // debug purposes
         // println!("{:?}", c);
         let res= match c {
-            Command::D(dir) => go(robot, world, dir.to_owned()),
-            Command::T(x, y) => teleport(robot, world, (*x,*y)),
+            Command::Control(dir) => go(robot, world, dir.to_owned()),
+            Command::Teletransport(x, y) => teleport(robot, world, (*x, *y)),
         };
 
         if res.is_err(){ return Err(res.err().unwrap()); }
