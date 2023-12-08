@@ -36,29 +36,7 @@ pub (crate) fn generate_map_teleport() -> Vec<Vec<Tile>> {
             elevation: 1,
         },
         Tile {
-            tile_type: Grass,
-            content: None,
-            elevation: 1,
-        },
-    ]);
-    map.push(vec![
-        Tile{
-            tile_type:Grass,
-            content:None,
-            elevation:1,
-        },
-        Tile {
-            tile_type: Grass,
-            content: None,
-            elevation: 1,
-        },
-        Tile {
-            tile_type: Grass,
-            content: None,
-            elevation: 1,
-        },
-        Tile {
-            tile_type: Grass,
+            tile_type: Teleport(false),
             content: None,
             elevation: 1,
         },
@@ -71,6 +49,28 @@ pub (crate) fn generate_map_teleport() -> Vec<Vec<Tile>> {
         },
         Tile {
             tile_type: DeepWater,
+            content: None,
+            elevation: 1,
+        },
+        Tile {
+            tile_type: Grass,
+            content: None,
+            elevation: 1,
+        },
+        Tile {
+            tile_type: Grass,
+            content: None,
+            elevation: 1,
+        },
+    ]);
+    map.push(vec![
+        Tile{
+            tile_type:Grass,
+            content:None,
+            elevation:1,
+        },
+        Tile {
+            tile_type: Teleport(false),
             content: None,
             elevation: 1,
         },
@@ -82,7 +82,7 @@ pub (crate) fn generate_map_teleport() -> Vec<Vec<Tile>> {
         Tile {
             tile_type: Mountain,
             content: None,
-            elevation: 2,
+            elevation: 6,
         },
     ]);
     map.push(vec![
@@ -164,11 +164,29 @@ fn generated_example(){
                     let directions=[D(Left),D(Up),D(Up)];
                     let r= actuator(&directions, 10, self, world);
                     my_position(self,world);
-                }if FLAG2 {
-                    //Do the gps..
+                }
+                if FLAG2 {
+                    println!("-----------------------------------------------------------------");
+                    if let Some(i) = gps(self, (0,2), world, Some(&[(2,1), (0,3)])) {
+                        println!("{:?}", i);
+                        let res = actuator(i.0.as_slice(), i.1, self, world);
+                        println!("{:?}", res);
+                    }
                     my_position(self,world);
                 }
             }
+
+
+
+            /*let res= gps(self,(3,2),world);
+            if res.is_some(){
+                let i=res.unwrap();
+                let directions=i.0.as_slice();
+                let cost=i.1;
+                let res=actuator(directions,cost,self,world);
+
+            }
+            my_position(self,world);*/
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);
@@ -212,5 +230,9 @@ fn generated_example(){
     unsafe {FLAG2=true;}
     let _=run.game_tick();
 
-
+    let goal=Content::Rock(10);
+    let wanted=Content::Tree(15);
+    if goal.properties()==wanted.properties(){
+        println!("s");
+    }
 }

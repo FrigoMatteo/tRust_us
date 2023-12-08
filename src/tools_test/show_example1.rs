@@ -21,7 +21,7 @@ use crate::tools_test::{generate_map, my_position};
 
 
 #[test]
-fn generated_example(){
+fn show_example1(){
     struct WorldGenerator{
         size:usize,
     }
@@ -33,7 +33,7 @@ fn generated_example(){
     impl Generator for WorldGenerator{
         fn gen(&mut self) -> (Vec<Vec<Tile>>, (usize, usize), EnvironmentalConditions, f32, Option<HashMap<Content, f32>>) {
             let map=generate_map();
-            let environmental_conditions = EnvironmentalConditions::new(&[Sunny, Rainy], 15, 12).unwrap();
+            let environmental_conditions = EnvironmentalConditions::new(&[Sunny], 15, 12).unwrap();
 
             let max_score = rand::random::<f32>();
 
@@ -60,15 +60,19 @@ fn generated_example(){
                 }
                 println!();
             }
-            let directions=[D(Down),D(Down),D(Down),D(Right),D(Right),D(Left),D(Left),D(Up),D(Up),D(Up)];
-            let r=actuator(&directions,10,self,world);
-            match r{
-                Ok(_)=>println!("Done"),
-                Err(_)=>println!("Error"),
-            }
+            let directions =[D(Down),D(Down),D(Down),D(Right),D(Right),D(Left),D(Left),D(Up),D(Up),D(Up)];
+            let r= actuator(&directions, 10, self, world);
             my_position(self,world);
-            let res= gps(self, (1, 1), world, None);
-            println!("{:?}",res);
+
+            if let Some(i) = gps(self, (3,2), world, None) {
+                println!("{:?}", i);
+                let directions=i.0.as_slice();
+                let cost=i.1;
+                let res=actuator(directions,cost,self,world);
+                println!("{:?}", res);
+            }
+
+            my_position(self,world);
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);

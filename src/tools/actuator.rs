@@ -7,7 +7,17 @@ use crate::tools::gps::Command;
 
 //Il mio è più bello scemoh
 
-// più bello
+/// A function which will command the robot to follow the specified path.
+///
+/// # Arguments
+///
+/// - `commands`: List of enum type Command, with the path that the robot has to follow.
+/// - `cost `: The amount of the cost to arrive at the destination
+/// - `robot `: The robot that has to follow the path.
+/// - `world `: The world that the robot is in.
+///
+/// # Returns
+/// gives back if the robot was able to do the following path.
 pub fn actuator(
     commands: &[Command],
     cost: usize,
