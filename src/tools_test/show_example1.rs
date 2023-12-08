@@ -15,7 +15,8 @@ use crate::{
     robotics_lib::interface::{Tools, debug, Direction::*},
 };
 use crate::tools::actuator::actuator;
-use crate::tools::gps::Command::D;
+use crate::tools::gps::Command::Control;
+use crate::tools::gps::Goal::Coordinates;
 use crate::tools::gps::gps;
 use crate::tools_test::{generate_map, my_position};
 
@@ -60,14 +61,14 @@ fn generated_example(){
                 }
                 println!();
             }
-            let directions=[D(Down),D(Down),D(Down),D(Right),D(Right),D(Left),D(Left),D(Up),D(Up),D(Up)];
+            let directions=[Control(Down), Control(Down), Control(Down), Control(Right), Control(Right), Control(Left), Control(Left), Control(Up), Control(Up), Control(Up)];
             let r=actuator(&directions,10,self,world);
             match r{
                 Ok(_)=>println!("Done"),
                 Err(_)=>println!("Error"),
             }
             my_position(self,world);
-            let res= gps(self, (1, 1), world, None);
+            let res= gps(self, Coordinates(1, 1), world, None);
             println!("{:?}",res);
         }
         fn handle_event(&mut self, event: Event) {

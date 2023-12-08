@@ -3,20 +3,40 @@ use std::collections::{BinaryHeap, HashMap};
 use robotics_lib::interface::{Direction, look_at_sky, robot_map};
 use robotics_lib::runner::Runnable;
 use robotics_lib::utils::calculate_cost_go_with_environment;
-use robotics_lib::world::tile::Tile;
+use robotics_lib::world::tile::{Content, Tile};
 use robotics_lib::world::World;
 use strum::IntoEnumIterator;
-use crate::tools::gps::Command::{D, T};
+use crate::tools::gps::Command::{Control, Teletransport};
+
+#[derive(Debug)]
+pub enum Goal {
+    Coordinates(usize, usize),
+    Resource(Content),
+}
+
+#[derive(Debug, Clone)]
+pub enum Command {
+    Control(Direction),
+    Teletransport(usize, usize),
+}
 
 // A* algorithm based on a BinaryHeap sorted over f = g + h
 // returns Option of a Vec of directions to get to a destination and the cost to get there or None if nor reachable
 pub fn gps(
     // metterei delle coordinate per poter utlizzare la funzione anche per altri casi
     robot: &impl Runnable,
-    destination: (usize,usize),
+    dest: Goal,
     world: &World,
-    mut opt_teleports: Option<&[(usize, usize)]>,
+    opt_teleports: Option<&[(usize, usize)]>,
 ) -> Option<(Vec<Command>, usize)>{
+
+    let mut destination = (0,0);
+    let mut dijk = 1;
+
+    match &dest {
+        Goal::Coordinates(x, y) => destination = (*x, *y),
+        Goal::Resource(_) => dijk = 0,
+    }
 
     let opt_map = robot_map(world);
     if opt_map.is_none() { return None; }
@@ -33,27 +53,22 @@ pub fn gps(
     // nearest to start
     let mut t1 = (0, 0);
     let mut min_cost_after_teleport = 0; //speculation over t2
-    let mut cost_teleport= 0;
     // teleport handling
-    if opt_teleports.is_some() && opt_teleports.unwrap().len() >= 2 {
+    if  dijk == 1 && opt_teleports.is_some() && opt_teleports.unwrap().len() >= 2 {
+        
         let teleports = opt_teleports.unwrap();
         t1 = teleports[0];
         let mut t2 = teleports[0];
+        
         for teleport in teleports.iter() {
             if cost_h(start, t1)       > cost_h(start, *teleport)       { t1 = *teleport; }
             if cost_h(destination, t2) > cost_h(destination, *teleport) { t2 = *teleport; }
         }
-
-        if t1 == t2 {
-            opt_teleports = None;
-        } else {
-            min_cost_after_teleport = cost_h(t2, destination);
-        }
+        min_cost_after_teleport = cost_h(t2, destination);
     }
 
-    costs.insert(start, (T(start.0, start.1), 0));
-    to_visit.push(
-        Visit {
+    costs.insert(start, (Teletransport(start.0, start.1), 0));
+    to_visit.push(Visit {
             coord: start,
             g: 0,
             h: 0,
@@ -63,60 +78,60 @@ pub fn gps(
     while let Some (Visit{ mut coord, g, h: _h }) = to_visit.pop() {
 
         // exit
-        if coord == destination { break; }
+        if match &dest {
+            Goal::Coordinates(_, _) => coord == destination,
+            Goal::Resource(con) => {
+                destination = coord;
+                map[coord.0][coord.1].to_owned().unwrap().content.properties() == con.properties()
+            },
+        } { break; }
 
-        // teleport
-        if opt_teleports.is_some() && coord == t1 {
-            // lets flyyyyy
+        // teleports
+        if opt_teleports.is_some() && opt_teleports.unwrap().contains(&coord) {
             for opt_teleport in opt_teleports.unwrap().iter() {
-                if *opt_teleport == t1 { continue; }
-                // contained with better g, skip else update
-                if costs.contains_key(&neighbor) && costs[&neighbor].1 < g { continue; } else { costs.insert(*opt_teleport, (T(coord.0,coord.1), g)); }
-
-                // new !analysed element
-                to_visit.push(
-                    Visit {
+                if *opt_teleport == coord { continue; }
+                if costs.contains_key(opt_teleport) && costs[opt_teleport].1 < g +30 { continue; } else { costs.insert(*opt_teleport, (Teletransport(coord.0, coord.1), g +30)); }
+                to_visit.push(Visit {
                         coord: *opt_teleport,
                         g: g + 30,
-                        h: cost_h(*opt_teleport, destination),
+                        h: cost_h(*opt_teleport, destination) * dijk,
                     }
                 )
             }
-            opt_teleports = None;
         }
 
+        // directions
         for dir in Direction::iter() {
             // controls
             // border
             if match dir {
-                | Direction::Up => coord.0 != 0,
-                | Direction::Down => coord.0 != map.len() - 1,
-                | Direction::Left => coord.1 != 0,
-                | Direction::Right => coord.1 != map.len() - 1,
-            } { neighbor = get_coords_row_col(coord, &dir, 1);
-            } else { continue; }
+                | Direction::Up => coord.0 == 0,
+                | Direction::Down => coord.0 == map.len() - 1,
+                | Direction::Left => coord.1 == 0,
+                | Direction::Right => coord.1 == map.len() - 1,
+            } { continue; }
+
+            neighbor = get_coords_row_col(coord, &dir, 1);
+
             //non existent or not walkable
-            if !(map[neighbor.0][neighbor.1].is_some() &&
-                map[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk())
-            { continue; }
+            if !(map[neighbor.0][neighbor.1].is_some() && map[neighbor.0][neighbor.1].to_owned().unwrap().tile_type.properties().walk()) { continue; }
 
             new_g = g + cost_g(coord, neighbor, world, &map);
             // contained with better g, skip else update
-            if costs.contains_key(&neighbor) && costs[&neighbor].1 < new_g { continue; } else { costs.insert(neighbor, (D(dir.clone()), new_g)); }
+            if costs.contains_key(&neighbor) && costs[&neighbor].1 < new_g { continue; }
+            else { costs.insert(neighbor, (Control(dir.clone()), new_g)); }
 
             // new costs
             new_h = cost_h(neighbor, destination);
             if opt_teleports.is_some() {
-                cost_teleport = cost_h(neighbor, t1) + min_cost_after_teleport +30;
-                new_h = min(new_h, cost_teleport);
+                new_h = min(new_h, cost_h(neighbor, t1) + min_cost_after_teleport +30);
             }
 
             // new !analysed element
-            to_visit.push(
-                Visit {
+            to_visit.push(Visit {
                     coord: neighbor,
                     g: new_g,
-                    h: new_h,
+                    h: new_h * dijk,
                 }
             )
         }
@@ -129,15 +144,13 @@ pub fn gps(
     let mut temp = destination;
 
     while temp != start {
-        // debug purposes
-        // println!("temp : {:?}, action_backwards : {:?}, cost : {}", temp, &costs[&temp].0, &costs[&temp].1);
         temp = match &costs[&temp].0 {
-            D(dir) => {
+            Control(dir) => {
                 commands.push(costs[&temp].0.clone());
                 get_coords_row_col(temp, dir, -1)
             },
-            T(x, y) => {
-                commands.push(T(temp.0,temp.1));
+            Teletransport(x, y) => {
+                commands.push(Teletransport(temp.0, temp.1));
                 (*x, *y)
             },
         }
@@ -146,12 +159,6 @@ pub fn gps(
     let len = commands.len();
     commands[0..len].reverse();
     Some((commands, costs[&destination].1))
-}
-
-#[derive(Debug, Clone)]
-pub enum Command {
-    D(Direction),
-    T(usize,usize),
 }
 
 fn get_coords_row_col(
@@ -202,7 +209,7 @@ fn cost_h(
 ) -> usize {
     // manhattan
     let correction = 2;
-    (neighbor.0).abs_diff(destination.0) + (neighbor.1).abs_diff(destination.1) * correction
+    neighbor.0.abs_diff(destination.0) + neighbor.1.abs_diff(destination.1) * correction
 }
 
 struct Visit {

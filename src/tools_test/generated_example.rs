@@ -7,11 +7,13 @@ use robotics_lib::runner::backpack::BackPack;
 use robotics_lib::world::coordinates::Coordinate;
 use robotics_lib::world::environmental_conditions::{EnvironmentalConditions,WeatherType::Sunny};
 use robotics_lib::world::tile::{Content, Tile};
+use robotics_lib::world::tile::Content::Rock;
 use robotics_lib::world::World;
 use robotics_lib::world::worldgenerator::Generator;
 use crate::tools::actuator::actuator;
 use crate::tools::gps::{Command, gps};
-use crate::tools::gps::Command::D;
+use crate::tools::gps::Command::Control;
+use crate::tools::gps::Goal::{Coordinates, Resource};
 use crate::tools_test::{generate_map, my_position};
 
 #[test]
@@ -54,11 +56,11 @@ fn generated_example(){
                 }
                 println!();
             }
-            let directions =[D(Down),D(Down),D(Down),D(Right),D(Right),D(Left),D(Left),D(Up),D(Up),D(Up)];
+            let directions =[Control(Down), Control(Down), Control(Down), Control(Right), Control(Right), Control(Left), Control(Left), Control(Up), Control(Up), Control(Up)];
             let r= actuator(&directions, 10, self, world);
             my_position(self,world);
 
-            if let Some(i) = gps(self, (2,2), world, None) {
+            if let Some(i) = gps(self, Resource(Rock(1)), world, None) {
                 println!("{:?}", i);
                 let directions=i.0.as_slice();
                 let cost=i.1;

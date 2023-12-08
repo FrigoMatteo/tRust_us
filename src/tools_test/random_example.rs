@@ -13,6 +13,7 @@ use robotics_lib::world::tile::Content::*;
 use robotics_lib::world::tile::TileType::*;
 use robotics_lib::world::World;
 use robotics_lib::world::worldgenerator::Generator;
+use crate::tools::gps::Goal::Coordinates;
 use crate::tools::gps::gps;
 use crate::tools_test::my_position;
 
@@ -107,7 +108,7 @@ fn random_example() {
             }
             my_position(self, world);
             robot_view(self, world);
-            let res = gps(self, (1, 1), world, Option::None);
+            let res = gps(self, Coordinates(1, 1), world, Option::None);
             println!("{:?}", res);
 
         }
