@@ -12,7 +12,7 @@ use robotics_lib::world::tile::{Content, Tile};
 use robotics_lib::world::tile::Content::*;
 use robotics_lib::world::tile::TileType::*;
 use robotics_lib::world::World;
-use robotics_lib::world::worldgenerator::Generator;
+use robotics_lib::world::world_generator::Generator;
 use crate::tools::gps::Goal::Coordinates;
 use crate::tools::gps::gps;
 use crate::tools_test::my_position;
@@ -148,7 +148,7 @@ fn random_example() {
     //We create the runner(Where we call the generator.gen()
     //We create and position our robot
     //Return the instaziation of the robot
-    let run = Runner::new(Box::new(r), &mut generator, tools);
+    let run = Runner::new(Box::new(r), &mut generator);
     // We initialize the robot
     match run {
         | Ok(mut r) => {

@@ -33,9 +33,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.150"
+version = "0.2.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89d92a4743f9a61002fae18374ed11e7973f530cb3a3255fb354818118b2203c"
+checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
 name = "ppv-lite86"
@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "robotics_lib"
-version = "0.1.8"
+version = "0.1.19"
 source = "sparse+https://advancedprogramming.disi.unitn.it/api/v1/crates/"
-checksum = "0f2a0bebb62df17fef5cd5760a880f1c2bf9b4482a13d41bbd77faef0078e481"
+checksum = "b378c2ce850f2c610db70bb4f60eb66c9082edbb0bd2bb3a737d7b46b0814b50"
 dependencies = [
  "lazy_static",
  "rand",
@@ -151,9 +151,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.39"
+version = "2.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23e78b90f2fcf45d3e842032ce32e3f2d1545ba6636271dcbf24fa306d87be7a"
+checksum = "13fa70a4ee923979ffb522cacce59d34421ebdea5625e1073c4326ef9d2dd42e"
 dependencies = [
  "proc-macro2",
  "quote",

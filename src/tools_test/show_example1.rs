@@ -10,7 +10,7 @@ use crate::{
     robotics_lib::event::events::Event,
     robotics_lib::energy::Energy,
     robotics_lib::world::coordinates::Coordinate,
-    robotics_lib::world::worldgenerator::Generator,
+    robotics_lib::world::world_generator::Generator,
     robotics_lib::world::World,
     robotics_lib::interface::{Tools, debug, Direction::*},
 };
@@ -102,7 +102,7 @@ fn show_example1(){
     let tools = vec![Tool];
     let mut generator=WorldGenerator::new(4);
 
-    let run = Runner::new(Box::new(r), &mut generator, tools);
+    let run = Runner::new(Box::new(r), &mut generator);
     match run {
         | Ok(mut r) => {
             let _ = r.game_tick();

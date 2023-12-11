@@ -8,6 +8,7 @@ use robotics_lib::world::World;
 use strum::IntoEnumIterator;
 use crate::tools::gps::Command::{Control, Teletransport};
 
+
 #[derive(Debug)]
 pub enum Goal {
     Coordinates(usize, usize),
@@ -15,7 +16,7 @@ pub enum Goal {
 }
 
 #[derive(Debug, Clone)]
-pub enum Command {
+pub (crate) enum Command {
     Control(Direction),
     Teletransport(usize, usize),
 }

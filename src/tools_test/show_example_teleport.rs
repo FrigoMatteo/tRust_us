@@ -10,7 +10,7 @@ use robotics_lib::world::tile::{Content, Tile};
 use robotics_lib::world::tile::TileType::*;
 use robotics_lib::world::tile::Content::*;
 use robotics_lib::world::World;
-use robotics_lib::world::worldgenerator::Generator;
+use robotics_lib::world::world_generator::Generator;
 use crate::tools::actuator::actuator;
 use crate::tools::gps::Command::Control;
 use crate::tools::gps::Goal::Coordinates;
@@ -220,20 +220,11 @@ fn generated_example(){
     let tools = vec![Tool];
     let mut generator=WorldGenerator::new(4);
 
-    let run = Runner::new(Box::new(r), &mut generator, tools);
+    let run = Runner::new(Box::new(r), &mut generator);
     let n=0;
     let mut run =run.unwrap();
     let _=run.game_tick();
     unsafe { FLAG1 = false; }
-    for _ in 0..40{
-        let _=run.game_tick();
-    }
     unsafe {FLAG2=true;}
     let _=run.game_tick();
-
-    let goal=Content::Rock(10);
-    let wanted=Content::Tree(15);
-    if goal.properties()==wanted.properties(){
-        println!("s");
-    }
 }

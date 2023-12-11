@@ -9,7 +9,7 @@ use robotics_lib::world::environmental_conditions::{EnvironmentalConditions,Weat
 use robotics_lib::world::tile::{Content, Tile};
 use robotics_lib::world::tile::Content::Rock;
 use robotics_lib::world::World;
-use robotics_lib::world::worldgenerator::Generator;
+use robotics_lib::world::world_generator::Generator;
 use crate::tools::actuator::actuator;
 use crate::tools::gps::{Command, gps};
 use crate::tools::gps::Command::Control;
@@ -101,7 +101,7 @@ fn generated_example(){
     let tools = vec![Tool];
     let mut generator=WorldGenerator::new(4);
 
-    let run = Runner::new(Box::new(r), &mut generator, tools);
+    let run = Runner::new(Box::new(r), &mut generator);
     match run {
         | Ok(mut r) => {
             let _ = r.game_tick();
