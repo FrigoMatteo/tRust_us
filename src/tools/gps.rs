@@ -6,7 +6,7 @@ use robotics_lib::utils::calculate_cost_go_with_environment;
 use robotics_lib::world::tile::{Content, Tile};
 use robotics_lib::world::World;
 use strum::IntoEnumIterator;
-use crate::tools::gps::Command::{Control, Teletransport};
+use crate::tools::gps::Command::{Control, Destroy, Teletransport};
 
 
 #[derive(Debug)]
@@ -14,17 +14,18 @@ pub enum Goal {
     Coordinates(usize, usize),
     Resource(Content),
 }
-
 #[derive(Debug, Clone)]
-pub (crate) enum Command {
+pub enum Command {
     Control(Direction),
     Teletransport(usize, usize),
+    Destroy(Direction),
 }
 
 // A* algorithm based on a BinaryHeap sorted over f = g + h
-// returns Option of a Vec of directions to get to a destination and the cost to get there or None if nor reachable
+// if h i set to 0 -> Dijkstra to find Content
+// A*       -> returns Option of a Vec of directions to get to a destination and the cost to get there or None if nor reachable
+// Dijkstra -> returns the same right now, need to change last command to destroy and its cost
 pub fn gps(
-    // metterei delle coordinate per poter utlizzare la funzione anche per altri casi
     robot: &impl Runnable,
     dest: Goal,
     world: &World,
@@ -90,8 +91,8 @@ pub fn gps(
         // teleports
         if opt_teleports.is_some() && opt_teleports.unwrap().contains(&coord) {
             for opt_teleport in opt_teleports.unwrap().iter() {
-                if *opt_teleport == coord { continue; }
-                if costs.contains_key(opt_teleport) && costs[opt_teleport].1 < g +30 { continue; } else { costs.insert(*opt_teleport, (Teletransport(coord.0, coord.1), g +30)); }
+                if *opt_teleport == coord  || costs.contains_key(opt_teleport) && costs[opt_teleport].1 < g +30 { continue; }
+                costs.insert(*opt_teleport, (Teletransport(coord.0, coord.1), g +30));
                 to_visit.push(Visit {
                         coord: *opt_teleport,
                         g: g + 30,
@@ -103,7 +104,6 @@ pub fn gps(
 
         // directions
         for dir in Direction::iter() {
-            // controls
             // border
             if match dir {
                 | Direction::Up => coord.0 == 0,
@@ -147,18 +147,32 @@ pub fn gps(
     while temp != start {
         temp = match &costs[&temp].0 {
             Control(dir) => {
-                commands.push(costs[&temp].0.clone());
-                get_coords_row_col(temp, dir, -1)
+                let c = get_coords_row_col(temp, dir, -1);
+                if temp == destination && dijk == 0 {
+                    commands.push(Destroy(dir.clone()));
+                    let x = match &dest {
+                        Goal::Resource(cont) => cont.properties().cost(),
+                        _ => unreachable!(),
+                    };
+                    let mut comm = costs[&temp].clone();
+                    comm.1 = costs[&c].1 + x;
+                    costs.insert(temp, comm);
+                } else {
+                    commands.push(costs[&temp].0.clone());
+                }
+                c
             },
             Teletransport(x, y) => {
                 commands.push(Teletransport(temp.0, temp.1));
                 (*x, *y)
             },
+            _ => unreachable!(),
         }
     }
 
     let len = commands.len();
     commands[0..len].reverse();
+
     Some((commands, costs[&destination].1))
 }
 
