@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use rand::Rng;
 use robotics_lib::energy::Energy;
 use robotics_lib::event::events::Event;
-use robotics_lib::interface::{debug, robot_view, Tools};
+use robotics_lib::interface::{debug, Direction, one_direction_view, robot_map, robot_view};
+use robotics_lib::interface::Direction::{Left, Right};
 use robotics_lib::runner::{Robot, Runnable, Runner};
 use robotics_lib::runner::backpack::BackPack;
 use robotics_lib::world::coordinates::Coordinate;
@@ -13,10 +14,34 @@ use robotics_lib::world::tile::Content::*;
 use robotics_lib::world::tile::TileType::*;
 use robotics_lib::world::World;
 use robotics_lib::world::world_generator::Generator;
+use crate::tools::actuator::actuator;
 use crate::tools::gps::Goal::Coordinates;
 use crate::tools::gps::gps;
-use crate::tools_test::my_position;
+use crate::tools::gps::Command::Control;
 
+
+fn visualize(robot:&mut impl Runnable,world:&mut World){
+    for _ in 0..2{
+        let commands=&[Control(Right)];
+        let _=actuator(commands,10,robot,world);
+        let _=one_direction_view(robot,world,Direction::Down,4);
+    }
+    for _ in 0..2{
+        let commands=&[Control(Left)];
+        let _=actuator(commands,10,robot,world);
+    }
+    return;
+    let map=robot_map(world).unwrap();
+    println!("\nWhat i discovered:");
+    for i in &map{
+        for j in i{
+            if j.is_none(){print!(" |None| ")}
+            else{print!(" |{:?}| ",j.as_ref().unwrap().tile_type)}
+        }
+        println!();
+    }
+
+}
 #[test]
 fn random_example() {
     struct WorldGeneratorRandom {
@@ -32,53 +57,94 @@ fn random_example() {
             let mut rng = rand::thread_rng();
             let mut map: Vec<Vec<Tile>> = Vec::new();
             // Initialize the map with default tiles
-            for _ in 0..self.size {
+            let mut row: Vec<Tile> = Vec::new();
+            for _ in 0..self.size{
+                let tile_type=Grass;
+                let content=None;
+                row.push(Tile{
+                    tile_type,content,elevation:0,
+                })
+            }
+            map.push(row);
+            for i in 1..self.size {
                 let mut row: Vec<Tile> = Vec::new();
-                for _ in 0..self.size {
-                    let i_tiletype = rng.gen_range(0..=9);
-                    let i_content = rng.gen_range(0..=2);
-                    let elevation = rng.gen_range(0..=9);
-                    /*let mut tile_type = match i_tiletype {
-                        | 0 => DeepWater,
-                        | 1 => ShallowWater,
-                        | 2 => Sand,
-                        | 3 => Grass,
-                        | 4 => Street,
-                        | 5 => Hill,
-                        | 6 => Mountain,
-                        | 7 => Snow,
-                        | 8 => Lava,
-                        | 9 => Teleport(false),
-                        | _ => Grass,
-                    };*/
-                    let tile_type = Grass;
-                    let content = match i_content {
-                        | 0 => Rock(4),
-                        | 1 => Tree(2),
-                        | 2 => Garbage(2),
-                        | 3 => Fire,
-                        | 4 => Coin(2),
-                        | 5 => Bin(2..3),
-                        | 6 => Crate(2..3),
-                        | 7 => Bank(3..54),
-                        | 8 => Content::Water(20),
-                        | 9 => Content::None,
-                        | 10 => Fish(3),
-                        | 11 => Market(20),
-                        | 12 => Content::Building,
-                        | 13 => Content::Bush(2),
-                        | 14 => Content::JollyBlock(2),
-                        | 15 => Content::Scarecrow,
-                        | _ => Content::None,
-                    };
-                    //let content=None;
-                    row.push(Tile {
+                if i == self.size - 1 {
+                    for _ in 0..self.size-1 {
+                        let i_tiletype = rng.gen_range(0..=9);
+                        let i_content = rng.gen_range(0..=1);
+                        let elevation = rng.gen_range(0..=9);
+                        let tile_type = match i_tiletype {
+                            | 0 => DeepWater,
+                            | 1 => ShallowWater,
+                            | 2 => Sand,
+                            | 3 => Grass,
+                            | 4 => Street,
+                            | 5 => Hill,
+                            | 6 => Mountain,
+                            | 7 => Snow,
+                            | 8 => Lava,
+                            | 9 => Teleport(false),
+                            | _ => Grass,
+                        };
+                        let mut content = None;
+                        if tile_type != Lava && tile_type != DeepWater && tile_type.properties() != Teleport(false).properties() && tile_type!=ShallowWater{
+                            content = match i_content {
+                                1 => Rock(2),
+                                | _ => None,
+                            };
+                        } else {
+                            content = None;
+                        }
+                        row.push(Tile {
+                            tile_type,
+                            content,
+                            elevation,
+                        });
+                    }
+                    let tile_type=Grass;
+                    let content=None;
+                    let elevation=0;
+                    row.push(Tile{
                         tile_type,
                         content,
                         elevation,
                     });
+                    map.push(row);
+                } else {
+                    for _ in 0..self.size {
+                        let i_tiletype = rng.gen_range(0..=9);
+                        let i_content = rng.gen_range(0..=1);
+                        let elevation = rng.gen_range(0..=9);
+                        let tile_type = match i_tiletype {
+                            | 0 => DeepWater,
+                            | 1 => ShallowWater,
+                            | 2 => Sand,
+                            | 3 => Grass,
+                            | 4 => Street,
+                            | 5 => Hill,
+                            | 6 => Mountain,
+                            | 7 => Snow,
+                            | 8 => Lava,
+                            | 9 => Teleport(false),
+                            | _ => Grass,
+                        };
+                        let mut content = None;
+                        if tile_type != Lava && tile_type != DeepWater && tile_type.properties() != Teleport(false).properties() && tile_type!=ShallowWater && tile_type!=Street{
+                            content = match i_content {
+                                1 => Rock(2),
+                                | _ => None,
+                            };
+                        } else {
+                            content = None;
+                        }
+                        row.push(Tile {
+                            tile_type,
+                            content,
+                            elevation,
+                        });
+                    }
+                    map.push(row);
                 }
-                map.push(row);
             }
             let environmental_conditions = EnvironmentalConditions::new(&[Sunny, Rainy], 15, 12).unwrap();
 
@@ -92,24 +158,25 @@ fn random_example() {
 
     impl Runnable for MyRobot {
         fn process_tick(&mut self, world: &mut World) {
-            let (map, dimension, (x_robot, y_robot)) = debug(self, world);
-            for i in &map {
+            let map= debug(self, world);
+            for i in &map.0 {
                 for j in i {
                     print!(" |{:?} c={}| ", j.tile_type, j.content);
                 }
                 println!();
             }
             println!("\n");
-            for i in &map {
+            for i in &map.0 {
                 for j in i {
                     print!(" |{}| ", j.elevation);
                 }
                 println!();
             }
-            my_position(self, world);
+            visualize(self,world);
+            //my_position(self, world);
             robot_view(self, world);
-            let res = gps(self, Coordinates(1, 1), world, Option::None);
-            println!("{:?}", res);
+            let res = gps(self, Coordinates(3, 3), world, Option::None);
+            println!("Commands:{:?}", res);
 
         }
         fn handle_event(&mut self, event: Event) {
@@ -139,9 +206,6 @@ fn random_example() {
     }
     //We create the robot
     let r = MyRobot(Robot::new());
-    struct Tool;
-    impl Tools for Tool {}
-    let tools = vec![Tool];
     //We create the generator
     let mut generator: WorldGeneratorRandom = WorldGeneratorRandom::new(4);
 

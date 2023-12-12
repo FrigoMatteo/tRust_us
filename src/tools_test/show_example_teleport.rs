@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use robotics_lib::energy::Energy;
 use robotics_lib::event::events::Event;
-use robotics_lib::interface::{debug, Tools, Direction::{Down, Left, Right, Up}, teleport};
+use robotics_lib::interface::{debug, Direction::{Down, Left, Right, Up}, teleport};
 use robotics_lib::runner::{Robot, Runnable, Runner};
 use robotics_lib::runner::backpack::BackPack;
 use robotics_lib::world::coordinates::Coordinate;
@@ -15,7 +15,7 @@ use crate::tools::actuator::actuator;
 use crate::tools::gps::Command::Control;
 use crate::tools::gps::Goal::Coordinates;
 use crate::tools::gps::gps;
-use crate::tools_test::{generate_map, my_position};
+use crate::tools_test::my_position;
 
 pub (crate) fn generate_map_teleport() -> Vec<Vec<Tile>> {
     let mut map: Vec<Vec<Tile>> = Vec::new();
@@ -143,15 +143,15 @@ fn generated_example(){
         fn process_tick(&mut self, world: &mut World) {
             unsafe {
                 if FLAG1 {
-                    let (map,dimension,(x_robot,y_robot))=debug(self,world);
-                    for i in &map{
+                    let map=debug(self,world);
+                    for i in &map.0{
                         for j in i{
                             print!(" |{:?} c={}| ",j.tile_type,j.content);
                         }
                         println!();
                     }
                     println!("\n");
-                    for i in &map{
+                    for i in &map.0{
                         for j in i{
                             print!(" |{}| ",j.elevation);
                         }
@@ -159,11 +159,11 @@ fn generated_example(){
                     }
                     //Create the robot_map
                     let directions=[Control(Down), Control(Down), Control(Right), Control(Down), Control(Right), Control(Right), Control(Up), Control(Up), Control(Up)];
-                    let r= actuator(&directions, 10, self, world);
+                    let _= actuator(&directions, 10, self, world);
                     my_position(self,world);
-                    let r=teleport(self,world,(2,1));
+                    let _=teleport(self,world,(2,1));
                     let directions=[Control(Left), Control(Up), Control(Up)];
-                    let r= actuator(&directions, 10, self, world);
+                    let _= actuator(&directions, 10, self, world);
                     my_position(self,world);
                 }
                 if FLAG2 {
@@ -176,18 +176,6 @@ fn generated_example(){
                     my_position(self,world);
                 }
             }
-
-
-
-            /*let res= gps(self,(3,2),world);
-            if res.is_some(){
-                let i=res.unwrap();
-                let directions=i.0.as_slice();
-                let cost=i.1;
-                let res=actuator(directions,cost,self,world);
-
-            }
-            my_position(self,world);*/
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);
@@ -215,13 +203,9 @@ fn generated_example(){
         }
     }
     let r = MyRobot(Robot::new());
-    struct Tool;
-    impl Tools for Tool {}
-    let tools = vec![Tool];
     let mut generator=WorldGenerator::new(4);
 
     let run = Runner::new(Box::new(r), &mut generator);
-    let n=0;
     let mut run =run.unwrap();
     let _=run.game_tick();
     unsafe { FLAG1 = false; }

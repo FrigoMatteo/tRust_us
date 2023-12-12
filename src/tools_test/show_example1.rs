@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use robotics_lib::world::tile::Content::Rock;
 use crate::{
     robotics_lib::world::tile::{Tile,Content},
     robotics_lib::world::environmental_conditions::EnvironmentalConditions,
@@ -12,11 +13,11 @@ use crate::{
     robotics_lib::world::coordinates::Coordinate,
     robotics_lib::world::world_generator::Generator,
     robotics_lib::world::World,
-    robotics_lib::interface::{Tools, debug, Direction::*},
+    robotics_lib::interface::{debug, Direction::*},
 };
 use crate::tools::actuator::actuator;
 use crate::tools::gps::Command::Control;
-use crate::tools::gps::Goal::Coordinates;
+use crate::tools::gps::Goal:: Resource;
 use crate::tools::gps::gps;
 use crate::tools_test::{generate_map, my_position};
 
@@ -47,15 +48,15 @@ fn show_example1(){
 
     impl Runnable for MyRobot{
         fn process_tick(&mut self, world: &mut World) {
-            let (map,dimension,(x_robot,y_robot))=debug(self,world);
-            for i in &map{
+            let map=debug(self,world);
+            for i in &map.0{
                 for j in i{
                     print!(" |{:?} c={}| ",j.tile_type,j.content);
                 }
                 println!();
             }
             println!("\n");
-            for i in &map{
+            for i in &map.0{
                 for j in i{
                     print!(" |{}| ",j.elevation);
                 }
@@ -68,8 +69,14 @@ fn show_example1(){
                 Err(_)=>println!("Error"),
             }
             my_position(self,world);
-            let res= gps(self, Coordinates(1, 1), world, None);
-            println!("{:?}",res);
+            if let Some(i) = gps(self, Resource(Rock(1)), world, None) {
+                println!("{:?}", i);
+                let directions=i.0.as_slice();
+                let cost=i.1;
+                let res=actuator(directions,cost,self,world);
+                println!("{:?}", res);
+            }
+            my_position(self,world);
         }
         fn handle_event(&mut self, event: Event) {
             println!("{:?}", event);
@@ -97,9 +104,6 @@ fn show_example1(){
         }
     }
     let r = MyRobot(Robot::new());
-    struct Tool;
-    impl Tools for Tool {}
-    let tools = vec![Tool];
     let mut generator=WorldGenerator::new(4);
 
     let run = Runner::new(Box::new(r), &mut generator);

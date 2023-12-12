@@ -1,5 +1,4 @@
 mod show_example1;
-mod generated_example;
 mod random_example;
 mod show_example_teleport;
 
@@ -32,24 +31,6 @@ pub (crate) fn my_position(robot:&impl Runnable,world:&World ){
     println!("I have this quantity of energy:{}\n",robot.get_energy().get_energy_level());
 }
 
-/*
-*  MAP:
-*    ______________________________________
-*   |            |            |            |
-*   |   Street   | Shallow W. |  DeepWater |
-*   |    3 el    |   2 el     |    1 el    |
-*   |____________|____________|____________|
-*   |            |            |            |
-*   |    Grass   |    Sand    |    Hill    |
-*   |    3 el    |    2 el    |    4 el    |
-*   |____________|____________|____________|
-*   |            |            |            |
-*   |   Lava     |    Snow    |  Mountain  |
-*   |   3 el     |    7 el    |    9 el    |
-*   |____________|____________|____________|
-*
-*
-*/
 pub (crate) fn generate_map() -> Vec<Vec<Tile>> {
     let mut map: Vec<Vec<Tile>> = Vec::new();
     // let content = Content::None;

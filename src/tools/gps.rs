@@ -77,7 +77,7 @@ pub fn gps(
         }
     );
 
-    while let Some (Visit{ mut coord, g, h: _h }) = to_visit.pop() {
+    while let Some (Visit{ coord, g, h: _h }) = to_visit.pop() {
 
         // exit
         if match &dest {
