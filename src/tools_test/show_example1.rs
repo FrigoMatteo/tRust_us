@@ -19,6 +19,7 @@ use crate::tools::actuator::actuator;
 use crate::tools::gps::Command::Control;
 use crate::tools::gps::Goal:: Resource;
 use crate::tools::gps::gps;
+use crate::tools::research;
 use crate::tools_test::{generate_map, my_position};
 
 
@@ -69,6 +70,10 @@ fn show_example1(){
                 Err(_)=>println!("Error"),
             }
             my_position(self,world);
+
+            //We also have research:
+
+            //let _=research(Resource(Rock(1)), None, self, world);
             if let Some(i) = gps(self, Resource(Rock(1)), world, None) {
                 println!("{:?}", i);
                 let directions=i.0.as_slice();

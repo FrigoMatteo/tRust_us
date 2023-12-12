@@ -25,6 +25,19 @@ pub enum Command {
 // if h i set to 0 -> Dijkstra to find Content
 // A*       -> returns Option of a Vec of directions to get to a destination and the cost to get there or None if nor reachable
 // Dijkstra -> returns the same right now, need to change last command to destroy and its cost
+
+/// A function to get the best path to reach a specific position or the closest content.\
+/// For the destination we use an ```enum Goal={Coordinates(usize,usize),Resource(Content)}```
+///
+/// # Arguments
+///
+/// - `opt_teleports`: Coordinates of the teleports you found.
+/// - `dest `: Which is your objective, definend as **Goal**.
+/// - `robot `: The robot that has to follow the path.
+/// - `world `: The world that the robot is in.
+///
+/// # Returns
+/// It returns a vector of Commands that the robot has to follow to reach the specific location + the cost required
 pub fn gps(
     robot: &impl Runnable,
     dest: Goal,
