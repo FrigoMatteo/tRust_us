@@ -45,9 +45,9 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.70"
+version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39278fbbf5fb4f646ce651690877f89d1c5811a3d4acb27700c1cb3cdb78fd3b"
+checksum = "75cb1540fadbd5b8fbccc4dddad2734eba435053f725621c070711a14bb5f4b8"
 dependencies = [
  "unicode-ident",
 ]
@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "robotics_lib"
-version = "0.1.19"
+version = "0.1.21"
 source = "sparse+https://advancedprogramming.disi.unitn.it/api/v1/crates/"
-checksum = "b378c2ce850f2c610db70bb4f60eb66c9082edbb0bd2bb3a737d7b46b0814b50"
+checksum = "f4fb131bf43873aa43c65bfa795c05c5ee8fe2f904e2b8dd7878cea13e214fc5"
 dependencies = [
  "lazy_static",
  "rand",
@@ -151,9 +151,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.40"
+version = "2.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13fa70a4ee923979ffb522cacce59d34421ebdea5625e1073c4326ef9d2dd42e"
+checksum = "ee659fb5f3d355364e1f3e5bc10fb82068efbf824a1e9d1c9504244a6469ad53"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -161,7 +161,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tRust_us"
+name = "tRust_us_Path_finding"
 version = "0.1.0"
 dependencies = [
  "rand",
